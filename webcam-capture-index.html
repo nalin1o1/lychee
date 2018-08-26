@@ -1,0 +1,117 @@
+
+<!doctype html>
+<html lang="en">
+    <head>
+        <meta charset="utf-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1">
+        <title>Team Genesis Capture Demo</title>
+        <style>
+            #webcam img{ 
+                max-width:500px;
+                height:auto
+            }36
+        </style>
+        <script>
+            var imageNr = 0;
+            var realImageNum = 0;
+            var numContinuousFails = 0;
+            var startDate = new Date();
+
+            var failTimer = null;
+            function clearFailTimer() {
+                if (failTimer) {          
+                    clearTimeout(failTimer);
+                    failTimer = null;
+                }
+            }
+            function handleFail(img) {
+                // Reload window if more than 100 continuous fails
+                //if(numContinuousFails++ > 100)
+                //    location.reload();
+                img.onload = img.onabort = img.onerror = function() {};
+                // Load transparent 1px gif
+                img.src = "data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7";
+                // stop current failer
+                clearFailTimer();
+                // restart load again
+                setTimeout(function() {createImageLayer();}, 1000);
+            }
+            
+            function createImageLayer() {
+                var image = new Image();
+                failTimer = setTimeout(function(){ handleFail(image); }, 5000);
+                
+                image.src = "camera/" +  (++imageNr);
+                image.style.position = "absolute";
+                image.style.zIndex = -1;
+                image.onload = imageOnload;
+                image.onerror = image.onabort = function() {handleFail(image);};
+            }
+            function imageOnload() {
+                numContinuousFails = 0;
+                var webcam = document.getElementById("webcam");
+                if(webcam.hasChildNodes())
+                {
+                    webcam.removeChild(webcam.childNodes[0]);
+                }
+                webcam.appendChild(this);
+                
+                var endDate   = new Date();
+                var seconds = (endDate.getTime() - startDate.getTime()) / 1000;
+                var imagecountTextDiv = document.getElementById("imagecount");
+                imagecountTextDiv.innerHTML = "[" + (++realImageNum) + "] images, [" + seconds + "] s, [" + imageNr + "] requests";
+                
+                setTimeout(function() { createImageLayer(); }, 1000);
+            }
+            
+            
+            function createImageLayerXHR()
+            {
+                var xhr = new XMLHttpRequest();
+                xhr.timeout = 4000;
+                xhr.ontimeout = xhr.onabort = xhr.onerror = function () { setTimeout(function() { createImageLayerXHR(); }, 1000); };
+                
+                xhr.open('GET', "camera/" + (++imageNr), true);
+
+                xhr.onload = function(){
+                    var img = new Image();
+                    var response = xhr.responseText;
+                    var binary = "";
+
+                    for(i=0;i<response.length;i++){
+                        binary += String.fromCharCode(response.charCodeAt(i) & 0xff);
+                    }
+                    img.src = 'data:image/jpeg;base64,' + btoa(binary);
+                    var webcam = document.getElementById("webcam");
+                    if(webcam.hasChildNodes())
+                    {
+                        webcam.removeChild(webcam.childNodes[0]);
+                    }
+                    webcam.appendChild(img);
+                    
+                    var endDate   = new Date();
+                    var seconds = (endDate.getTime() - startDate.getTime()) / 1000;
+                    var imagecountTextDiv = document.getElementById("imagecount");
+                    imagecountTextDiv.innerHTML = "[" + (++realImageNum) + "] images, [" + seconds + "] s, [" + imageNr + "] requests";
+                                        
+                    setTimeout(function() { createImageLayerXHR(); }, 1000);
+                }
+               
+
+                xhr.overrideMimeType('text/plain; charset=x-user-defined');
+                xhr.send();
+            }
+
+        </script>
+    </head>
+    <body style="border:0;" onload="createImageLayerXHR();">
+
+        <p style="padding:4px;">            
+            Renesas - WiFi Remote Capture
+        </p>
+        <div id="imagecount">[0] Images in [0] seconds</div>        
+        <div>
+            <div id="webcam"></div>
+        </div>
+    </body>
+</html>
