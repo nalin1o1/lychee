@@ -1,0 +1,1 @@
+for ((i=1;i<=1000;i++)); do  curl -m 20 -H "Accept: image/jpeg" "http://192.168.0.7:80/camera/1" -o camera1_curl$i.jpg; done

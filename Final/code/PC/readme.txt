@@ -1,0 +1,1 @@
+Run the curl_get.sh, in a git bash shell on Windows.
